@@ -40,6 +40,13 @@ def schroeder_backward_int(
     # Subtract noise power from the squared signal if requested (This will use in section 4.3)
     # Compute cumulative sum (integration) over the reversed array
     # Flip the result back to original order
+    x = np.flip(x)
+    x = np.square(x)
+    if subtract_noise:
+        x = np.maximum(0, x - noise_level**2)
+    norm_vals = np.cumsum(x)
+    out = np.flip(norm_vals)
+    
 
     # Normalize the energy if requested
     if energy_norm:
@@ -102,8 +109,19 @@ def compute_edc(
     ### WRITE YOUR CODE HERE ###
     # Compute EDCs using Schroeder backward integration
     # Convert to dB scale
+    print(f"Input signal: {out}")
+    edc, _ =  schroeder_backward_int(out, energy_norm=energy_norm, subtract_noise=subtract_noise, noise_level=noise_level)
+    print(f"EDC after backward integration: {edc}")
+    edc_safe = np.where(edc == 0, 1e-15, edc)
 
-    return out
+    db = 10 * np.log10(abs(edc_safe))  # Add small offset to avoid log(0)
+    print(f"EDC in dB pre normalize: {db}")
+    db = db - np.max(db)  # Normalize to maximum value
+    print(f"EDC in dB: {db}")
+    return db
+    # print(x)
+
+    # return out
 
 
 def estimate_rt60(
@@ -143,6 +161,22 @@ def estimate_rt60(
     # Select the range of EDC values between decay_start_db and decay_end_db and save it in valid_range
     # Perform linear regression with scipy.stats's linregress on the selected range to estimate decay slope and intercept
     # Calculate RT60 as the time required for a 60 dB decay
+    valid_range = (edc_db >= decay_end_db) & (edc_db <= decay_start_db)
+    print(f"edc_db: {edc_db}")
+    print(f"Valid range: {valid_range}")
+    print(f"Selected range: {edc_db[valid_range]}")
+    print(f"Time vector: {time[valid_range]}")
+    print(f"Time vector length: {len(time[valid_range])}")
+    print(f"EDC length: {len(edc_db[valid_range])}")
+    lin_reg = linregress(time[valid_range], edc_db[valid_range])
+    print(f"Linear regression result: {lin_reg}")
+    slope = lin_reg.slope
+    intercept = lin_reg.intercept
+    print(f"Slope: {slope}, Intercept: {intercept}")
+    rt60 = -60 / slope  # RT60 in seconds
+    
+
+    # get time values for valid range
     return rt60, slope, intercept, valid_range
 
 
@@ -253,6 +287,7 @@ def normalized_echo_density(
         # Compute the weighted standard deviation of the frame
         # Count the number of samples above the weighted standard deviation, weighted by the window function
         # Normalize the count by the ERFC constant and store it in the output array
+        pass
     # Remove padding to match original RIR length
     ned = output[:-window_length_samps]
     return ned
