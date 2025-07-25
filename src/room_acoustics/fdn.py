@@ -150,6 +150,7 @@ class DifferentiableFeedbackDelayNetwork:
         self.nfft = nfft
         self.onset_time = onset_time  # onset delay in seconds
         self.alias_decay_db = alias_decay_db 
+        self.device = torch.device("cpu")
         self.set_fdn()
         self.input_layer = dsp.FFTAntiAlias(self.nfft, alias_decay_db=alias_decay_db) 
         self.output_layer = dsp.iFFTAntiAlias(nfft=nfft, alias_decay_db=alias_decay_db)
@@ -161,24 +162,47 @@ class DifferentiableFeedbackDelayNetwork:
         # complete the code by filling the parameters of each module
 
         direct_gain = dsp.Gain(
-
+            size=(1, 1),
+            nfft=self.nfft,
+            requires_grad=True,
+            alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
         
         onset_delay = dsp.Delay(
-
+            size = (1, 1),
+            max_len=self.delay_lengths.max(),
+            nfft=self.nfft,
+            isint=True,
+            requires_grad=False,
+            alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
         # Input gain
         input_gain = dsp.Gain(
-
+            size=(self.N, 1),
+            nfft=self.nfft,
+            requires_grad=True,
+            alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
         # Output gain
         output_gain = dsp.Gain(
-
+            size=(1, self.N),
+            nfft=self.nfft,
+            requires_grad=True,
+            alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
 
         # Feedback path with orthogonal matrix
         mixing_matrix = dsp.Matrix(
-            
+            size=(self.N, self.N),
+            nfft=self.nfft,
+            matrix_type="orthogonal",
+            requires_grad=True,
+            alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
 
         # (NON LEARNABLE) Parallel delay lines
@@ -188,7 +212,8 @@ class DifferentiableFeedbackDelayNetwork:
             nfft=self.nfft,
             isint=True,
             requires_grad=False,
-            alias_decay_db=self.alias_decay_db, 
+            alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
         delays.assign_value(delays.sample2s(self.delay_lengths))
 
@@ -200,6 +225,7 @@ class DifferentiableFeedbackDelayNetwork:
             fs=self.fs,
             requires_grad=True,
             alias_decay_db=self.alias_decay_db,
+            device=self.device,
         )
         # We need to map the attenuation to a decibel scale
         attenuation.map = lambda x: 20 * torch.log10(torch.sigmoid(x))
