@@ -82,8 +82,20 @@ def decay_kernel(
 
     #### WRITE YOUR CODE HERE ####
     # calculate the decay time constant tau from T60 - save them in a variable called tau_vals
-    # calculate the exponential decay kernel
 
+    # band_i = t_values.shape[0]
+    # slope_i = t_values.shape[1]
+    # time_i = len(time)
+    # exponential = np.zeros((time_i, band_i, slope_i))
+    # for t in range(time_i):
+    #     for b in range(band_i):
+    #         for s in range(slope_i):
+    #             exponential[t, b, s] = np.exp(-(time[t] * 13.8) / t_values[b, s] * fs)
+    exponential = np.exp(np.einsum("bk, t -> bkt", 1/(t_values * fs), -13.8 * time))
+    print(f"Shape of exponential decay kernel: {exponential.shape}")
+
+    # calculate the decay time constant tau from T60 - save them in a variable called tau_vals
+    # calculate the exponential decay kernel
     # normalise the kernel to have unit energy
     if normalize_envelope:
         exponential = np.einsum("ntb, nb -> ntb", exponential,
