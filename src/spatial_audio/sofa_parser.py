@@ -191,10 +191,13 @@ class HRIRReader:
             des_listener_view = des_listener_view.T
 
         num_views = des_listener_view.shape[0]
+        print(f"Number of desired views: {num_views}")
+        print(f"Number of measurements in the dataset: {self.num_meas}")
         assert num_views < self.num_meas
 
         # euclidean distance between desired and available views
         dist = np.zeros((self.num_meas, num_views))
+        print(self.ir_data.shape)
         des_ir_matrix = np.zeros((num_views, self.ir_data.shape[1:]),
                                  dtype=float)
 
