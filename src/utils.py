@@ -148,10 +148,19 @@ def rir_from_sweep(meas_sweep: Union[ArrayLike, NDArray],
     dry_sweep_trunc = dry_sweep[start_time_samps:end_time_samps, :]
 
     #### WRITE YOUR CODE HERE ####
-
     # time flip the dry sweep signal
 
     # convolve the measured sweep signals and the time flipped dry sweep signal
+    inverse_sweeps = np.flip(dry_sweep_trunc, axis=0)
+    # convolve the measured sweep with the inverse sweeps
+    from scipy.signal import fftconvolve
+    rirs = fftconvolve(meas_sweep_trunc, inverse_sweeps, mode='same')
+    return rirs
+
+    # inverse_sweep = np.flip(sweep)
+    # # Deconvolve the recording with the inverse sweep to extract the RIR
+    # from scipy.signal import fftconvolve
+    # rir = fftconvolve(rec, inverse_sweep, mode='same') 
 
     # return the RIRs
 
