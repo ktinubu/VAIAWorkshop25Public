@@ -95,25 +95,32 @@ def convert_srir_to_brir(srirs: NDArray, hrir_sh: NDArray,
 
     #### WRITE YOUR CODE HERE ####
 
+    # azimuth then elevation 
+
     # loop through receiver positions
     for rec_pos_idx in tqdm(range(num_receivers)):
 
         # get current SRIR FFT = shape is num_ambi_channels x num_freqs
-
+        srir_fft = ambi_rtfs[rec_pos_idx, :, :]
         # loop through head orientations
         for ori_idx in range(num_orientations):
 
-            pass
             # get current head orientation
-
+            head_ori = head_orientations[ori_idx, :]
+            #  Q1 order of head orientation is [azimuth, elevation]? 
+            # Q2 how to get rotation matrix? spa.sph.sh_rotation_matrix gives it to us in shperical harmonics
+            # Q3 FFT'd (SRIRs) @ 
             # get rotation matrix in the opposite direction - size num_freq_bins x num_ambi_channels
-
+            rotation_matrix = spa.sph.sh_rotation_matrix(ambi_order, -head_ori[0], -head_ori[1],
+                                                          0)
             # get current rotated SRIR
-
+            print("rotation_matrix shape:", rotation_matrix.shape)
+            rotated_srtf = rotation_matrix @ ambi_hrtfs
             # get the binaural room transfer function by conjugating
             # freq-domain SRIRs and multiplying them with SH-HRTFs
-
+            brir_fft = np.einsum('os,bcl->ocb', rotation_matrix, srir_fft) * np.conj(ambi_hrtfs)
             # get the BRIR by taking an inverse FFT and save it to current
             # receiver position and orientation index
+
 
     return brirs
