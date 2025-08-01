@@ -193,7 +193,8 @@ class SIRR:
         # calculate the velocity vector from the X,Y,Z channels of B-format RIRs
 
         # calculate the intensity vector from the velocity vector and W channel
-
+        intensity_vector = cur_stft_frame[3] * self.impedance() * self.unit_vectors()
+        
         # calculate diffuseness metric
 
         # calculate azimuth and elevation from the diffuseness metric
@@ -218,15 +219,16 @@ class SIRR:
         #### WRITE YOUR CODE HERE ####
 
         # decompose into directional part = sqrt(1 - smoothed_diffuseness_metric) * W
-
+        directional_part = np.sqrt(1 - self.smoothed_params.diffuseness_metric) * cur_stft_frame[3]
         # process directional part
-
+        directional_part = self.process_directional_part(directional_part)
         # decompose into diffuse part = smoothed_diffuseness_metric * W**2
-
+        diffuse_part = self.smoothed_params.diffuseness_metric * cur_stft_frame[3]**2
         # process diffuse part
-
+        diffuse_part = self.process_diffuse_part(diffuse_part)
         # add directional and diffuse parts and return output
-
+        output = directional_part + diffuse_part
+        return output
     def process_directional_part(self, directional_part: NDArray) -> NDArray:
         """
         Process directional part.
@@ -245,16 +247,16 @@ class SIRR:
 
         # get the target direction of the directional component in cartesian
         # coordinates from the DoAs
-
+        doa = -self.smoothed_params.intensity_vector 
         # get loudspeaker_gains using VBAP by calling self.vbap.process()
         # shape is  (num_loudspeakers, num_freq_bins)
-
+        loudspeaker_gains = self.vbap.process(doa)
         # get the directional signal for each loudspeaker by
         # multiplying directional_part with loudspeaker_gains
         # shape is (num_loudspeakers, num_freq_bins)
-
+        directional_part = np.einsum("lk, k -> lk", loudspeaker_gains, directional_part)
         # return directional part for all loudspeakers
-        return
+        return directional_part
 
     def process_diffuse_part(self, diffuse_part: NDArray) -> NDArray:
         """
